@@ -19,10 +19,10 @@ const (
 	fmtAfterError  = "%v happened after error: %w"
 )
 
-type initDatabase func(binaryExtractLocation, runtimePath, pgDataDir, username, password, locale string, logger *os.File) error
+type initDatabase func(binaryExtractLocation, runtimePath, pgDataDir, runAsUser, username, password, locale string, logger *os.File) error
 type createDatabase func(port uint32, username, password, database string) error
 
-func defaultInitDatabase(binaryExtractLocation, runtimePath, pgDataDir, username, password, locale string, logger *os.File) error {
+func defaultInitDatabase(binaryExtractLocation, runtimePath, pgDataDir, runAsUser, username, password, locale string, logger *os.File) error {
 	passwordFile, err := createPasswordFile(runtimePath, password)
 	if err != nil {
 		return err
@@ -44,7 +44,24 @@ func defaultInitDatabase(binaryExtractLocation, runtimePath, pgDataDir, username
 	postgresInitDBProcess.Stderr = logger
 	postgresInitDBProcess.Stdout = logger
 
-	if err = postgresInitDBProcess.Run(); err != nil {
+	if runAsUser != "" {
+		err = chown(passwordFile, runAsUser)
+		if err != nil {
+			return err
+		}
+
+		err = chown(runtimePath, runAsUser)
+		if err != nil {
+			return err
+		}
+
+		err = setRunAs(postgresInitDBProcess, runAsUser)
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := postgresInitDBProcess.Run(); err != nil {
 		return fmt.Errorf("unable to init database using '%s': %w", postgresInitDBProcess.String(), err)
 	}
 
