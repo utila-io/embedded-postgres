@@ -55,6 +55,11 @@ func defaultInitDatabase(binaryExtractLocation, runtimePath, pgDataDir, runAsUse
 			return err
 		}
 
+		err = chownR(binaryExtractLocation, runAsUser)
+		if err != nil {
+			return err
+		}
+
 		err = setRunAs(postgresInitDBProcess, runAsUser)
 		if err != nil {
 			return err

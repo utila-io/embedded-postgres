@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"strconv"
 	"syscall"
 )
@@ -56,4 +57,20 @@ func chown(file string, runAsUser string) error {
 	}
 
 	return nil
+}
+
+func chownR(path string, runAsUser string) error {
+	uid, gid, err := lookupUser(runAsUser)
+	if err != nil {
+		return err
+	}
+
+	return filepath.Walk(path, func(name string, info os.FileInfo, err error) error {
+		if err == nil {
+			if err = os.Chown(name, int(uid), int(gid)); err != nil {
+				return fmt.Errorf("unable to chown '%s' file with '%s': %w", name, runAsUser, err)
+			}
+		}
+		return err
+	})
 }
