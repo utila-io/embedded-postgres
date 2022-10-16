@@ -23,6 +23,7 @@ func defaultCacheLocator(versionStrategy VersionStrategy) CacheLocator {
 				operatingSystem,
 				architecture,
 				version))
+		fmt.Println("*** cache location: ", cacheLocation)
 
 		info, err := os.Stat(cacheLocation)
 
